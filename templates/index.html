@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TKX Upcoming Shows</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            margin: 0;
+            padding: 20px;
+            background-color: #000000;
+            color: #ffffff;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background-color: #111111;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 20px rgba(255,255,255,0.1);
+        }
+        .title {
+            font-size: 64px;
+            text-transform: uppercase;
+            margin-bottom: 10px;
+            letter-spacing: 2px;
+            line-height: 1.2;
+        }
+        .title .tkx {
+            color: #8a2be2;
+        }
+        .subtitle {
+            font-size: 42px;
+            color: #ffffff;
+            margin-bottom: 30px;
+        }
+        textarea, input[type="text"] {
+            width: 94%;
+            margin-bottom: 20px;
+            background-color: #222222;
+            border: none;
+            color: #ffffff;
+            padding: 10px;
+            border-radius: 5px;
+        }
+        textarea {
+            height: 150px;
+        }
+        #eventList {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+        .event-card {
+            background-color: #1a1a1a;
+            padding: 15px;
+            border-radius: 10px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: calc(25% - 15px);
+        }
+        .event-image {
+            width: 100%;
+            height: 140px;
+            border-radius: 8px;
+            object-fit: cover;
+            margin-bottom: 10px;
+        }
+        .event-details {
+            text-align: center;
+        }
+        .event-date {
+            background-color: #8a2be2;
+            color: white;
+            width: 70px; /* Increased from 60px */
+            height: 70px; /* Increased from 60px */
+            border-radius: 50%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            font-weight: bold;
+            margin: 10px auto;
+        }
+        .event-date .month {
+            font-size: 16px; /* Increased from 14px */
+            text-transform: uppercase;
+            line-height: 1;
+        }
+        .event-date .day {
+            font-size: 24px; /* Increased from 22px */
+            line-height: 1;
+        }
+        #previewContainer {
+            margin-top: 20px;
+        }
+        button {
+            background-color: #8a2be2;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-right: 10px;
+            margin-bottom: 10px;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+        button:hover {
+            background-color: #9b4deb;
+        }
+        .buy-button {
+            background-color: #131313;
+            color: white;
+            padding: 15px;
+            border: none;
+            cursor: pointer;
+            font-weight: bold;
+            text-transform: uppercase;
+            text-decoration: none;
+            font-size: 14px;
+            display: block;
+            text-align: center;
+            transition: background-color 0.3s ease;
+        }
+        .buy-button:hover {
+            background-color: #8a2be2;
+        }
+        #loadingSpinner {
+            display: none;
+            width: 50px;
+            height: 50px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #3498db;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        @media (max-width: 600px) {
+            .title {
+                font-size: 24px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1 class="title"><span class="tkx">TKX</span> UPCOMING SHOWS</h1>
+
+        <input type="text" id="urlInput" value="https://tkx.live/events/" style="display: block; margin-bottom: 10px;">
+        <textarea id="htmlInput" placeholder="Or paste your HTML here"></textarea>
+        <button onclick="parseEvents()">Parse from URL</button>
+        <button onclick="parseEvents()">Parse from HTML</button>
+        <div id="loadingSpinner"></div>
+        <div id="selectionButtons" style="display:none; margin-top: 20px;">
+            <button onclick="selectAll()">Select All</button>
+            <button onclick="unselectAll()">Unselect All</button>
+            <button onclick="selectTop(8)">Select Top 8</button>
+            <button onclick="selectTop(12)">Select Top 12</button>
+            <button onclick="selectTop(16)">Select Top 16</button>
+        </div>
+        <div id="eventList"></div>
+        <input type="date" id="sendDateInput" style="display:none; margin-bottom: 10px;">
+        <button onclick="generateCards('upcoming')" style="display:none;" id="generateUpcomingButton">Generate Upcoming Show Cards</button>
+        <button onclick="generateCards('announcement')" style="display:none;" id="generateAnnouncementButton">Generate Announcement Cards</button>
+        <button onclick="generateCards('upcoming_announcement')" style="display:none;" id="generateUpcomingAnnouncementButton">Generate Upcoming Announcement Cards</button>
+        <button onclick="generateCards('featured')" style="display:none;" id="generateFeaturedButton">Generate Featured Event Card</button>
+        <button onclick="copyCards()" style="display:none;" id="copyButton">Copy Cards HTML</button>
+        <div id="previewContainer"></div>
+    </div>
+
+    <template id="cardTemplate">
+        <a href="EVENT_LINK" target="_blank" style="text-decoration: none; color: inherit;">
+            <div style="background-color: #1a1a1a; border-radius: 10px; overflow: hidden; color: white; margin-bottom: 30px; width: 100%; box-shadow: 0 4px 8px rgba(0,0,0,0.2); font-family: Tahoma, sans-serif;">
+                <div style="position: relative;">
+                    <img src="IMAGE_URL" style="width: 100%; object-fit: contain;">
+                    <div style="position: absolute; top: 10px; right: 10px; background-color: #5a1a9a; color: white; padding: 5px 10px; border-radius: 5px; font-size: 14px;">Doors Open: TIME</div>
+                </div>
+                <div style="padding: 20px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                        <div style="background-color: #48157b; width: 70px; height: 70px; border-radius: 50%; display: flex; flex-direction: column; justify-content: center; align-items: center; font-weight: bold; flex-shrink: 0;">
+                            <div style="font-size: 16px; text-transform: uppercase; line-height: 1;">MONTH</div>
+                            <div style="font-size: 24px; line-height: 1;">DAY</div>
+                        </div>
+                        <div style="flex-grow: 1; margin-left: 20px;">
+                            <div style="font-size: 24px; font-weight: bold; margin-bottom: 5px;">ARTIST_NAME</div>
+                            <div style="font-size: 18px; color: #cccccc;"><strong>Venue:</strong> VENUE_NAME</div>
+                        </div>
+                    </div>
+                    <div style="background-color: #5a1a9a; color: white; padding: 15px; border: none; cursor: pointer; font-weight: bold; text-transform: uppercase; font-size: 16px; text-align: center; transition: background-color 0.3s ease; border-radius: 5px; position: relative; overflow: hidden;">
+                        BUY TICKETS
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle; margin-left: 5px;"><path d="M2 9a3 3 0 0 1 0 6v2a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-2a3 3 0 0 1 0-6V7a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2Z"></path><path d="M13 5v2"></path><path d="M13 17v2"></path><path d="M13 11v2"></path></svg>
+                        <div style="position: absolute; right: 5px; bottom: -20px; font-size: 64px; opacity: 0.1; font-weight: bold; font-family: 'Arial Black', Gadget, sans-serif; transform: scale(1.2);">TKX</div>
+                    </div>
+                </div>
+            </div>
+        </a>
+    </template>
+    <script>
+        function parseEvents() {
+            const url = document.getElementById('urlInput').value.trim();
+            const htmlContent = document.getElementById('htmlInput').value.trim();
+            const formData = new FormData();
+
+            if (!url && !htmlContent) {
+                alert('Please provide either a URL or HTML content.');
+                return;
+            }
+
+            if (url) {
+                try {
+                    new URL(url); // This will throw an error if the URL is invalid
+                    formData.append('url', url);
+                } catch (error) {
+                    alert('Please enter a valid URL.');
+                    return;
+                }
+            } else {
+                formData.append('html_content', htmlContent);
+            }
+
+            const loadingSpinner = document.getElementById('loadingSpinner');
+            loadingSpinner.style.display = 'block';
+
+            fetch('/parse_events', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                loadingSpinner.style.display = 'none';
+                if (data.error) {
+                    throw new Error(data.error);
+                }
+                displayEvents(data.events);
+            })
+            .catch((error) => {
+                loadingSpinner.style.display = 'none';
+                console.error('Error:', error);
+                alert('An error occurred while parsing events: ' + error.message);
+            });
+        }
+
+        function displayEvents(events) {
+            const eventList = document.getElementById('eventList');
+            eventList.innerHTML = '';
+            events.forEach((event, index) => {
+                const eventElement = document.createElement('div');
+                eventElement.classList.add('event-card');
+                eventElement.innerHTML = `
+                    <img src="${event.image_url}" class="event-image">
+                    <div class="event-details">
+                        <input type="checkbox" id="event${index}" checked>
+                        <label for="event${index}">
+                            <strong>${event.artist}</strong><br>
+                            ${event.venue}<br>
+                            ${event.dayofweek}, ${event.month} ${event.day}, Doors Open: ${event.time}
+                        </label>
+                    </div>
+                `;
+                eventElement.addEventListener('click', function(e) {
+                    if (e.target.type !== 'checkbox') {
+                        const checkbox = this.querySelector('input[type="checkbox"]');
+                        checkbox.checked = !checkbox.checked;
+                    }
+                });
+                eventList.appendChild(eventElement);
+            });
+            document.getElementById('generateUpcomingButton').style.display = 'block';
+            document.getElementById('generateAnnouncementButton').style.display = 'block';
+            document.getElementById('generateUpcomingAnnouncementButton').style.display = 'block';
+            document.getElementById('generateFeaturedButton').style.display = 'block';
+            document.getElementById('copyButton').style.display = 'block';
+            document.getElementById('selectionButtons').style.display = 'block';
+            showDateInput();
+            window.events = events;
+        }
+
+        function selectAll() {
+            document.querySelectorAll('#eventList input[type="checkbox"]').forEach(checkbox => checkbox.checked = true);
+        }
+
+        function unselectAll() {
+            document.querySelectorAll('#eventList input[type="checkbox"]').forEach(checkbox => checkbox.checked = false);
+        }
+
+        function selectTop(n) {
+            const checkboxes = document.querySelectorAll('#eventList input[type="checkbox"]');
+            checkboxes.forEach((checkbox, index) => checkbox.checked = index < n);
+        }
+
+        function generateCards(templateType) {
+            const selectedEvents = Array.from(document.querySelectorAll('#eventList input:checked'))
+                .map(checkbox => window.events[parseInt(checkbox.id.replace('event', ''))]);
+            
+            fetch('/generate_cards', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    events: selectedEvents,
+                    templateType: templateType
+                }),
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    throw new Error(data.error);
+                }
+                document.getElementById('previewContainer').innerHTML = data.html;
+                document.getElementById('copyButton').style.display = 'block';
+            })
+            .catch((error) => {
+                console.error('Error:', error);
+                alert('An error occurred while generating cards: ' + error.message);
+            });
+        }
+
+        function copyCards() {
+            const previewContainer = document.getElementById('previewContainer');
+            const tempTextArea = document.createElement('textarea');
+            tempTextArea.value = previewContainer.innerHTML;
+            document.body.appendChild(tempTextArea);
+            tempTextArea.select();
+            document.execCommand('copy');
+            document.body.removeChild(tempTextArea);
+            alert('Cards HTML copied to clipboard!');
+        }
+
+        function getMonthNumber(monthName) {
+            const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+            return months.indexOf(monthName);
+        }
+
+        function showDateInput() {
+            document.getElementById('sendDateInput').style.display = 'block';
+            document.getElementById('sendDateInput').valueAsDate = new Date(); // Set default to today
+        }
+    </script>
+</body>
+</html>

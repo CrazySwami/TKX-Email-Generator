@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ticket Sales Analysis</title>
+    <script src="https://cdn.jsdelivr.net/npm/streamlit-component-lib@^1.4.0/dist/streamlit.js"></script>
+    <link rel="stylesheet" href="{{ url_for('serve_static', filename='streamlit.css') }}">
+</head>
+<body>
+    <div id="root"></div>
+    <script src="{{ url_for('serve_static', filename='streamlit.js') }}"></script>
+    <script>
+        const streamlitDoc = window.parent.document;
+        const streamlitApp = streamlitDoc.createElement("iframe");
+        streamlitApp.src = "http://localhost:8501";
+        streamlitApp.style.width = "100%";
+        streamlitApp.style.height = "100vh";
+        streamlitApp.style.border = "none";
+        document.getElementById("root").appendChild(streamlitApp);
+    </script>
+</body>
+</html>
